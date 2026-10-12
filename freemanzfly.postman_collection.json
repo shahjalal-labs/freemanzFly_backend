@@ -1,0 +1,1070 @@
+{
+  "info": {
+    "name": "FremanzFly API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Base URL: {{baseUrl}}/api/v1\n\nPrisma schema (prisma/schema.prisma):\n\n```prisma\ndatasource db {\n  provider = \"mongodb\"\n  url      = env(\"DATABASE_URL\")\n}\n\ngenerator client {\n  provider = \"prisma-client-js\"\n}\n\nmodel User {\n  id              String            @id @default(auto()) @map(\"_id\") @db.ObjectId\n  firstName       String?\n  lastName        String?\n  email           String            @unique\n  appleId         String?\n  password        String\n  phone           String?\n  address         String?\n  proffesion      String?\n  city            String?\n  state           String?\n  country         String?\n  zipCode         String?\n  fcmToken        String?\n  profileImage    String?           @default(\"https://i.ibb.co.com/nrs3FjM/images.png\")\n  customerId      String?\n  role            UserRole\n  status          UserStatus        @default(Active)\n  createdAt       DateTime          @default(now())\n  updatedAt       DateTime          @updatedAt\n  order           order[]\n  shippingAddress shippingAddress[]\n  CouponUser      CouponUser[]\n  Review          Review[]\n\n  @@map(\"users\")\n}\n\nmodel PendingUser {\n  id        String    @id @default(auto()) @map(\"_id\") @db.ObjectId\n  firstName String\n  lastName  String\n  email     String    @unique\n  password  String\n  phone     String?\n  address   String?\n  city      String?\n  role      UserRole? @default(User)\n  state     String?\n  country   String?\n  otpCode   String\n  expiresAt DateTime\n  createdAt DateTime  @default(now())\n\n  @@map(\"pendingUsers\")\n}\n\nmodel Otp {\n  id        String   @id @default(auto()) @map(\"_id\") @db.ObjectId\n  email     String   @unique\n  otpCode   String\n  expiresAt DateTime\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@map(\"otps\")\n}\n\nenum UserStatus {\n  Active\n  Blocked\n  Deleted\n}\n\nenum UserRole {\n  Admin\n  User\n}\n\nmodel shippingAddress {\n  id        String   @id @default(auto()) @map(\"_id\") @db.ObjectId\n  user      User?    @relation(fields: [userId], references: [id])\n  userId    String?  @db.ObjectId\n  fullName  String\n  email     String\n  phone     String\n  address   String\n  city      String\n  state     String\n  country   String\n  zipCode   String\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n  order     order[]\n\n  @@map(\"shippingAddresses\")\n}\n\nmodel product {\n  id                     String         @id @default(auto()) @map(\"_id\") @db.ObjectId\n  name                   String\n  images                 String[]\n  description            String\n  price                  Float\n  brand                  String\n  quantity               Int\n  availability           availability   @default(InStock)\n  productCategory        String\n  technicalSpecification Json?\n  physicalSpecification  Json?\n  warrantyInformation    Json?\n  rating                 Float          @default(0)\n  reviews                Review[]\n  createdAt              DateTime       @default(now())\n  updatedAt              DateTime       @updatedAt\n  orderProduct           orderProduct[]\n\n  @@map(\"products\")\n}\n\nenum availability {\n  InStock\n  OutOfStock\n  PreOrder\n  UpComming\n}\n\nmodel productBrand {\n  id        String   @id @default(auto()) @map(\"_id\") @db.ObjectId\n  name      String   @unique\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@map(\"productBrands\")\n}\n\nmodel productCategory {\n  id        String   @id @default(auto()) @map(\"_id\") @db.ObjectId\n  name      String   @unique\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@map(\"productCategories\")\n}\n\nmodel order {\n  id                String           @id @default(auto()) @map(\"_id\") @db.ObjectId\n  orderId           String           @unique\n  user              User?            @relation(fields: [userId], references: [id])\n  userId            String?          @db.ObjectId\n  products          orderProduct[]\n  totalAmount       Float\n  isPaid            Boolean?\n  status            OrderStatus      @default(Pending)\n  cancelReason      String?\n  shippingAddressId String?          @db.ObjectId\n  shippingAddress   shippingAddress? @relation(fields: [shippingAddressId], references: [id])\n  paymentMethodId   String?\n  paymentIntentId   String?\n  createdAt         DateTime         @default(now())\n  updatedAt         DateTime         @updatedAt\n\n  @@map(\"orders\")\n}\n\nmodel orderProduct {\n  id        String   @id @default(auto()) @map(\"_id\") @db.ObjectId\n  order     order?   @relation(fields: [orderId], references: [id])\n  orderId   String?  @db.ObjectId\n  product   product? @relation(fields: [productId], references: [id])\n  productId String?  @db.ObjectId\n  quantity  Int\n  price     Float\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@map(\"orderProducts\")\n}\n\nenum OrderStatus {\n  Pending\n  Processed\n  Shipped\n  InRoute\n  Delivered\n  Cancelled\n}\n\nmodel Review {\n  id        String   @id @default(auto()) @map(\"_id\") @db.ObjectId\n  rating    Float\n  comment   String\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n  product   product? @relation(fields: [productId], references: [id])\n  productId String?  @db.ObjectId\n  userId    String?  @db.ObjectId\n  user      User?    @relation(fields: [userId], references: [id])\n\n  @@map(\"reviews\")\n}\n\nmodel Coupon {\n  id            String       @id @default(auto()) @map(\"_id\") @db.ObjectId\n  title         String\n  code          String       @unique\n  discountType  DiscountType\n  discountValue Float\n  status        CouponStatus @default(Active)\n  expireDate    DateTime\n  createdAt     DateTime     @default(now())\n  updatedAt     DateTime     @updatedAt\n  couponUsers   CouponUser[]\n\n  @@map(\"coupons\")\n}\n\nenum DiscountType {\n  Percentage\n  Flat\n}\n\nmodel CouponUser {\n  id       String   @id @default(auto()) @map(\"_id\") @db.ObjectId\n  user     User     @relation(fields: [userId], references: [id])\n  userId   String   @db.ObjectId\n  coupon   Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)\n  couponId String   @db.ObjectId\n  message  String?\n  addedAt  DateTime @default(now())\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@unique([userId, couponId])\n  @@map(\"couponUsers\")\n}\n\nenum CouponStatus {\n  Active\n  Expired\n  Inactive\n}\n\nmodel contact {\n  id        String @id @default(auto()) @map(\"_id\") @db.ObjectId\n  firstName String\n  lastName  String\n  email     String\n  message   String\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n}\n\nmodel Notification {\n  id         String   @id @default(auto()) @map(\"_id\") @db.ObjectId\n  receiverId String?  @db.ObjectId\n  senderId   String?  @db.ObjectId\n  title      String?\n  content    String\n  isRead     Boolean  @default(false)\n  createdAt  DateTime @default(now())\n  updatedAt  DateTime @updatedAt\n\n  @@map(\"notifications\")\n}\n```"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Admin Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/admin-login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "admin-login"]
+            }
+          }
+        },
+        {
+          "name": "Social Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"provider\": \"google\",\n  \"token\": \"{{socialToken}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/social/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "social", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Send OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/send-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "send-otp"]
+            }
+          }
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"otpCode\": \"123456\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/verify-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "verify-otp"]
+            }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"password123\",\n  \"newPassword\": \"newPassword123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/reset-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "reset-password"]
+            }
+          }
+        },
+        {
+          "name": "Set Profile (form-data)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "profileImage", "type": "file", "src": "" },
+                {
+                  "key": "bodyData",
+                  "value": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"phone\": \"+15555555555\",\n  \"address\": \"123 Main St\",\n  \"city\": \"Austin\",\n  \"state\": \"TX\",\n  \"country\": \"USA\",\n  \"zipCode\": \"73301\"\n}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/set-profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "set-profile"]
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"password123\",\n  \"newPassword\": \"newPassword123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "change-password"]
+            }
+          }
+        },
+        {
+          "name": "Delete Account",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/delete-account",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "delete-account"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Register (Pending User)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/request",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "request"]
+            }
+          }
+        },
+        {
+          "name": "OTP Resend",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/otp-resend",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "otp-resend"]
+            }
+          }
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"User\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "create"]
+            }
+          }
+        },
+        {
+          "name": "Get Users (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users"]
+            }
+          }
+        },
+        {
+          "name": "Get Single User",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/single/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "single", "{{id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete User (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/delete-user/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "delete-user", "{{id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete My Account",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users"]
+            }
+          }
+        },
+        {
+          "name": "Update User (Admin, form-data)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "profileImage", "type": "file", "src": "" },
+                {
+                  "key": "bodyData",
+                  "value": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"phone\": \"+15555555555\"\n}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/update-user/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "update-user", "{{userId}}"]
+            }
+          }
+        },
+        {
+          "name": "Admin Overview",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/admin-overview",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "admin-overview"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "Create Product Category",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Electronics\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products", "categories"]
+            }
+          }
+        },
+        {
+          "name": "Get Product Categories",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products", "categories"]
+            }
+          }
+        },
+        {
+          "name": "Get Product Category By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/categories/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products", "categories", "{{id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Product Category",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Category\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/categories/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products", "categories", "{{id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Product Category",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/categories/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products", "categories", "{{id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Product Brand",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/brands/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products", "brands", "{{id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Product Brands",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/brands",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products", "brands"]
+            }
+          }
+        },
+        {
+          "name": "Create Product (form-data)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "productImages", "type": "file", "src": "" },
+                {
+                  "key": "bodyData",
+                  "value": "{\n  \"name\": \"Smartphone\",\n  \"description\": \"Latest model\",\n  \"price\": 799.99,\n  \"quantity\": 10,\n  \"productCategory\": \"Electronics\",\n  \"availablity\": \"InStock\",\n  \"brand\": \"Acme\",\n  \"technicalSpecification\": {\"ram\": \"8GB\", \"storage\": \"128GB\"},\n  \"physicalSpecification\": {\"weight\": \"180g\"},\n  \"warrantyInformation\": {\"months\": 12}\n}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products"]
+            }
+          }
+        },
+        {
+          "name": "Get Products",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products"]
+            }
+          }
+        },
+        {
+          "name": "Get Product By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products", "{{id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Product (form-data)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "productImages", "type": "file", "src": "" },
+                {
+                  "key": "bodyData",
+                  "value": "{\n  \"name\": \"Updated Name\",\n  \"price\": 699.99\n}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products", "{{id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "products", "{{id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reviews",
+      "item": [
+        {
+          "name": "Create Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 5,\n  \"comment\": \"Great product\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/review/create/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "review", "create", "{{productId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get All Reviews (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/review",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "review"]
+            }
+          }
+        },
+        {
+          "name": "Get Review By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/review/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "review", "{{id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Review",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 4,\n  \"comment\": \"Updated comment\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/review/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "review", "{{id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Review (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/review/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "review", "{{id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Shipping Address",
+      "item": [
+        {
+          "name": "Create Shipping Address",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"John Doe\",\n  \"email\": \"user@example.com\",\n  \"phone\": \"+15555555555\",\n  \"address\": \"123 Main St\",\n  \"city\": \"Austin\",\n  \"state\": \"TX\",\n  \"country\": \"USA\",\n  \"zipCode\": \"73301\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shippingAddress",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "shippingAddress"]
+            }
+          }
+        },
+        {
+          "name": "Get My Shipping Addresses",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shippingAddress",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "shippingAddress"]
+            }
+          }
+        },
+        {
+          "name": "Get Shipping Address By ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shippingAddress/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "shippingAddress", "{{id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Shipping Address",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address\": \"456 Oak Ave\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shippingAddress/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "shippingAddress", "{{id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Shipping Address",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shippingAddress/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "shippingAddress", "{{id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Create Order (Cash On Delivery)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"products\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"quantity\": 1\n    }\n  ],\n  \"shippingAddressId\": \"{{shippingAddressId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/order/cashOnDelivary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "order", "cashOnDelivary"]
+            }
+          }
+        },
+        {
+          "name": "Create Order (With Payment)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"products\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"quantity\": 1\n    }\n  ],\n  \"shippingAddressId\": \"{{shippingAddressId}}\",\n  \"paymentMethodId\": \"pm_123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/order/order-payment",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "order", "order-payment"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"cancelReason\": \"Changed my mind\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/order/cancel-order",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "order", "cancel-order"]
+            }
+          }
+        },
+        {
+          "name": "Calculate Discount",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"products\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"quantity\": 1\n    }\n  ],\n  \"couponCode\": \"SAVE10\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/order/calculate-discount",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "order", "calculate-discount"]
+            }
+          }
+        },
+        {
+          "name": "Get All Orders (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/order",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "order"]
+            }
+          }
+        },
+        {
+          "name": "Get My Orders",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/order/my-orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "order", "my-orders"]
+            }
+          }
+        },
+        {
+          "name": "Payment History (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/order/payment-history",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "order", "payment-history"]
+            }
+          }
+        },
+        {
+          "name": "Admin Overview",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/order/admin-overview",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "order", "admin-overview"]
+            }
+          }
+        },
+        {
+          "name": "Admin Overview Users",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/order/admin-overview/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "order", "admin-overview", "users"]
+            }
+          }
+        },
+        {
+          "name": "Best Selling",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/order/best-selling",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "order", "best-selling"]
+            }
+          }
+        },
+        {
+          "name": "Get Order By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/order/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "order", "{{id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Order",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Processed\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/order/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "order", "{{id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Order",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/order/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "order", "{{id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cuopons",
+      "item": [
+        {
+          "name": "Create Cuopon",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SAVE10\",\n  \"discountValue\": 10,\n  \"discountType\": \"Percentage\",\n  \"expireDate\": \"2026-12-31T00:00:00.000Z\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cuopon",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cuopon"]
+            }
+          }
+        },
+        {
+          "name": "Get Cuopons (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cuopon",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cuopon"]
+            }
+          }
+        },
+        {
+          "name": "Send Cuopon To Users",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cuoponId\": \"{{cuoponId}}\",\n  \"users\": [\n    \"{{userId}}\"\n  ],\n  \"message\": \"Enjoy your discount\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cuopon/send-user",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cuopon", "send-user"]
+            }
+          }
+        },
+        {
+          "name": "Get Cuopon By ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cuopon/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cuopon", "{{id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Cuopon",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"discountValue\": 15,\n  \"discountType\": \"Flat\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cuopon/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cuopon", "{{id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Cuopon",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cuopon/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cuopon", "{{id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contacts",
+      "item": [
+        {
+          "name": "Create Contact",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"user@example.com\",\n  \"message\": \"Hello\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contact",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "contact"]
+            }
+          }
+        },
+        {
+          "name": "Get Contacts (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contact",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "contact"]
+            }
+          }
+        },
+        {
+          "name": "Get Contact By ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contact/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "contact", "{{id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Contact",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Updated message\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contact/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "contact", "{{id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Contact",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/contact/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "contact", "{{id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Get Notifications",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications"]
+            }
+          }
+        },
+        {
+          "name": "Get Notification By ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notifications", "{{id}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
